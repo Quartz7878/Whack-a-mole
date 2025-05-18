@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whack-a-Mole | Modern UI</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #10b981;
+            --background: #f9fafb;
+            --surface: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --danger: #ef4444;
+            --border-radius: 12px;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background-color: var(--surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+            font-weight: 800;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .stat {
+            background-color: var(--background);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            text-align: center;
+            flex: 1;
+            margin: 0 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 0.75rem;
+            width: 100%;
+            aspect-ratio: 1/1;
+        }
+
+        .cell {
+            background-color: var(--background);
+            border-radius: var(--border-radius);
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+        }
+
+        .cell:hover {
+            transform: translateY(-2px);
+        }
+
+        .cell.active {
+            background-color: var(--secondary);
+        }
+
+        .mole {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 80%;
+            background-color: #8B4513;
+            border-radius: 50% 50% 40% 40%;
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: bottom center;
+            transform: translateX(-50%) translateY(100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mole.visible {
+            transform: translateX(-50%) translateY(10%);
+        }
+
+        .mole-face {
+            width: 80%;
+            height: 60%;
+            position: relative;
+            background-color: #D2B48C;
+            border-radius: 50% 50% 45% 45%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 5%;
+        }
+
+        .mole-eyes {
+            display: flex;
+            justify-content: space-around;
+            width: 80%;
+            margin-top: -10%;
+        }
+
+        .mole-eye {
+            width: 20%;
+            height: 20%;
+            background-color: var(--text);
+            border-radius: 50%;
+        }
+        
+        .mole-nose {
+            width: 20%;
+            height: 10%;
+            background-color: #FF69B4;
+            border-radius: 50%;
+            margin-top: 10%;
+        }
+
+        .whacked {
+            animation: whacked 0.2s ease-out;
+        }
+
+        @keyframes whacked {
+            0% { transform: translateX(-50%) translateY(10%) scale(1); }
+            50% { transform: translateX(-50%) translateY(10%) scale(0.8); }
+            100% { transform: translateX(-50%) translateY(100%) scale(0.8); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        button {
+            flex: 1;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background-color: var(--text-light);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Game over modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background-color: var(--surface);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .modal.visible .modal-content {
+            transform: scale(1);
+        }
+
+        .modal h2 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .final-score {
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 1rem 0;
+            color: var(--secondary);
+        }
+
+        /* High score table */
+        .high-scores {
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        .high-scores h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+            color: var(--text-light);
+        }
+
+        .scores-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .scores-table th, .scores-table td {
+            padding: 0.5rem;
+            text-align: center;
+        }
+
+        .scores-table th {
+            background-color: var(--background);
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        .scores-table tr:nth-child(even) {
+            background-color: var(--background);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .stat {
+                margin: 0;
+            }
+
+            .grid {
+                gap: 0.5rem;
+            }
+        }
+
+        /* Accessibility focus styles */
+        button:focus, .cell:focus {
+            outline: 3px solid var(--primary);
+            outline-offset: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Whack-a-Mole</h1>
+            <p>Click on the moles as they appear!</p>
+            
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Score</div>
+                    <div class="stat-value" id="score">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Time</div>
+                    <div class="stat-value" id="timer">30</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">High Score</div>
+                    <div class="stat-value" id="high-score">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid" id="grid">
+            <!-- Grid cells will be generated by JavaScript -->
+        </div>
+
+        <div class="controls">
+            <button id="start-button">Start Game</button>
+        </div>
+    </div>
+
+    <div class="modal" id="game-over-modal">
+        <div class="modal-content">
+            <h2>Game Over!</h2>
+            <p>Your final score:</p>
+            <div class="final-score" id="final-score">0</div>
+            
+            <div class="high-scores">
+                <h3>High Scores</h3>
+                <table class="scores-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Score</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="high-scores-table">
+                        <!-- High scores will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="controls">
+                <button id="play-again-button">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game configuration
+        const config = {
+            gridSize: 4,
+            gameTime: 30, // in seconds
+            moleVisibleTimeMin: 500, // in milliseconds
+            moleVisibleTimeMax: 1500, // in milliseconds
+            moleAppearanceInterval: 800, // in milliseconds
+            pointsPerMole: 10
+        };
+
+        // Game state
+        let gameState = {
+            score: 0,
+            timeLeft: config.gameTime,
+            isPlaying: false,
+            lastMoleCell: null,
+            timerId: null,
+            moleTimers: [],
+            highScores: []
+        };
+
+        // DOM elements
+        const grid = document.getElementById('grid');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const highScoreDisplay = document.getElementById('high-score');
+        const startButton = document.getElementById('start-button');
+        const playAgainButton = document.getElementById('play-again-button');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const highScoresTable = document.getElementById('high-scores-table');
+
+        // Helper functions
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function loadHighScores() {
+            const savedScores = localStorage.getItem('whackAMoleHighScores');
+            if (savedScores) {
+                gameState.highScores = JSON.parse(savedScores);
+                
+                // Update the display
+                const highestScore = gameState.highScores.length > 0 ? 
+                    gameState.highScores[0].score : 0;
+                highScoreDisplay.textContent = highestScore;
+            }
+        }
+
+        function saveHighScore(score) {
+            const newScore = {
+                score: score,
+                date: new Date().toLocaleDateString()
+            };
+            
+            gameState.highScores.push(newScore);
+            gameState.highScores.sort((a, b) => b.score - a.score);
+            
+            // Keep only top 5
+            if (gameState.highScores.length > 5) {
+                gameState.highScores = gameState.highScores.slice(0, 5);
+            }
+            
+            localStorage.setItem('whackAMoleHighScores', JSON.stringify(gameState.highScores));
+            
+            // Update display
+            const highestScore = gameState.highScores.length > 0 ? 
+                gameState.highScores[0].score : 0;
+            highScoreDisplay.textContent = highestScore;
+        }
+
+        function updateHighScoresTable() {
+            highScoresTable.innerHTML = '';
+            
+            gameState.highScores.forEach((score, index) => {
+                const row = document.createElement('tr');
+                
+                const rankCell = document.createElement('td');
+                rankCell.textContent = index + 1;
+                
+                const scoreCell = document.createElement('td');
+                scoreCell.textContent = score.score;
+                
+                const dateCell = document.createElement('td');
+                dateCell.textContent = score.date;
+                
+                row.appendChild(rankCell);
+                row.appendChild(scoreCell);
+                row.appendChild(dateCell);
+                
+                highScoresTable.appendChild(row);
+            });
+        }
+
+        // Create the grid
+        function createGrid() {
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < config.gridSize * config.gridSize; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.setAttribute('data-index', i);
+                cell.setAttribute('tabindex', '0'); // For keyboard accessibility
+                
+                // Create mole elements
+                const mole = document.createElement('div');
+                mole.classList.add('mole');
+                
+                const moleFace = document.createElement('div');
+                moleFace.classList.add('mole-face');
+                
+                const moleEyes = document.createElement('div');
+                moleEyes.classList.add('mole-eyes');
+                
+                const leftEye = document.createElement('div');
+                leftEye.classList.add('mole-eye');
+                
+                const rightEye = document.createElement('div');
+                rightEye.classList.add('mole-eye');
+                
+                const moleNose = document.createElement('div');
+                moleNose.classList.add('mole-nose');
+                
+                moleEyes.appendChild(leftEye);
+                moleEyes.appendChild(rightEye);
+                
+                moleFace.appendChild(moleEyes);
+                moleFace.appendChild(moleNose);
+                
+                mole.appendChild(moleFace);
+                cell.appendChild(mole);
+                
+                // Add event listener
+                cell.addEventListener('click', handleCellClick);
+                cell.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        handleCellClick(e);
+                    }
+                });
+                
+                grid.appendChild(cell);
+            }
+        }
+
+        // Show a mole in a random cell
+        function showRandomMole() {
+            if (!gameState.isPlaying) return;
+            
+            const cells = document.querySelectorAll('.cell');
+            let randomIndex;
+            
+            // Avoid showing a mole in the same cell consecutively
+            do {
+                randomIndex = getRandomInt(0, cells.length - 1);
+            } while (randomIndex === gameState.lastMoleCell);
+            
+            gameState.lastMoleCell = randomIndex;
+            
+            const cell = cells[randomIndex];
+            const mole = cell.querySelector('.mole');
+            
+            // Show the mole
+            mole.classList.add('visible');
+            cell.classList.add('active');
+            cell.setAttribute('aria-pressed', 'true');
+            
+            // Hide the mole after a random time
+            const visibleTime = getRandomInt(
+                config.moleVisibleTimeMin, 
+                config.moleVisibleTimeMax
+            );
+            
+            const timerId = setTimeout(() => {
+                if (mole.classList.contains('visible')) {
+                    mole.classList.remove('visible');
+                    cell.classList.remove('active');
+                    cell.setAttribute('aria-pressed', 'false');
+                }
+                
+                // Schedule the next mole
+                if (gameState.isPlaying) {
+                    showRandomMole();
+                }
+            }, visibleTime);
+            
+            gameState.moleTimers.push(timerId);
+        }
+
+        // Handle cell click
+        function handleCellClick(e) {
+            if (!gameState.isPlaying) return;
+            
+            const cell = e.currentTarget;
+            const mole = cell.querySelector('.mole');
+            
+            if (mole.classList.contains('visible')) {
+                // Update score
+                gameState.score += config.pointsPerMole;
+                scoreDisplay.textContent = gameState.score;
+                
+                // Visual feedback for successful whack
+                mole.classList.add('whacked');
+                cell.classList.remove('active');
+                cell.setAttribute('aria-pressed', 'false');
+                
+                // Play sound (optional)
+                // You could add a whack sound here
+                
+                // Remove the mole
+                setTimeout(() => {
+                    mole.classList.remove('visible', 'whacked');
+                }, 200);
+            }
+        }
+
+        // Update the timer
+        function updateTimer() {
+            gameState.timeLeft--;
+            timerDisplay.textContent = gameState.timeLeft;
+            
+            if (gameState.timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        // Start the game
+        function startGame() {
+            // Reset the game state
+            gameState.score = 0;
+            gameState.timeLeft = config.gameTime;
+            gameState.isPlaying = true;
+            gameState.lastMoleCell = null;
+            
+            // Update the display
+            scoreDisplay.textContent = gameState.score;
+            timerDisplay.textContent = gameState.timeLeft;
+            
+            // Disable the start button
+            startButton.disabled = true;
+            
+            // Start the timer
+            gameState.timerId = setInterval(updateTimer, 1000);
+            
+            // Show the first mole
+            showRandomMole();
+        }
+
+        // End the game
+        function endGame() {
+            gameState.isPlaying = false;
+            
+            // Clear all timers
+            clearInterval(gameState.timerId);
+            gameState.moleTimers.forEach(timerId => clearTimeout(timerId));
+            gameState.moleTimers = [];
+            
+            // Hide all moles
+            document.querySelectorAll('.mole').forEach(mole => {
+                mole.classList.remove('visible', 'whacked');
+            });
+            
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('active');
+                cell.setAttribute('aria-pressed', 'false');
+            });
+            
+            // Re-enable the start button
+            startButton.disabled = false;
+            
+            // Save high score
+            saveHighScore(gameState.score);
+            
+            // Show game over modal
+            finalScoreDisplay.textContent = gameState.score;
+            updateHighScoresTable();
+            gameOverModal.classList.add('visible');
+        }
+
+        // Event listeners
+        startButton.addEventListener('click', startGame);
+        
+        playAgainButton.addEventListener('click', () => {
+            gameOverModal.classList.remove('visible');
+            startGame();
+        });
+
+        // Initialize the game
+        function init() {
+            createGrid();
+            loadHighScores();
+        }
+
+        // Start the game when the page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
